@@ -175,7 +175,7 @@ void gpsdecoding (unsigned char* str_data_arr, int str_len, geometry_msgs::PoseS
 int main (int argc, char** argv){
     ros::init(argc, argv, "gps_data_pub");
     ros::NodeHandle nh;
-    ros::Publisher gps_local_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/pad/local_position.pose", 100);
+    ros::Publisher gps_local_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/pad/local_position/pose", 100);
     ros::Publisher gps_global_vel_pub = nh.advertise<geometry_msgs::TwistStamped>("/pad/global_position/velocity_global",100);
     ros::Publisher gps_global_position_pub = nh.advertise<sensor_msgs::NavSatFix>("/pad/global_position/global",100);
 
