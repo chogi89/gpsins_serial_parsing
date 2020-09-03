@@ -10,17 +10,15 @@
 #include <stdio.h>
 #include <bits/stdc++.h> 
 #include <geometry_msgs/QuaternionStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/NavSatFix.h>
 
-
-
 #define NTH_BIT(b, n) ((b >> n) & 0x1)
+
 //for IEEE754 32bit convert
-typedef union UnFloatingPointIEEE754
-{
-    struct
-    {
+typedef union UnFloatingPointIEEE754{
+    struct{
         unsigned int mantissa : 23;
         unsigned int exponent : 8;
         unsigned int sign : 1;
@@ -29,10 +27,8 @@ typedef union UnFloatingPointIEEE754
 } UFloatingPointIEEE754;
 
 //for IEEE754 64bit convert
-typedef union UnDoublePointIEEE754
-{
-    struct
-    {
+typedef union UnDoublePointIEEE754{
+    struct{
         unsigned long mantissa : 52;
         unsigned int exponent : 11;
         unsigned int sign : 1;
@@ -40,13 +36,11 @@ typedef union UnDoublePointIEEE754
     double d;  
 } UnDoublePointIEEE754;
 
-float ieee754decoding_32(unsigned char* str_data_arr,int i)
-{
+float ieee754decoding_32(unsigned char* str_data_arr,int i){
     unsigned char input[4] ={str_data_arr[i],str_data_arr[i-1],str_data_arr[i-2],str_data_arr[i-3] };
     char output_32[9];
     //char[ string shape ] -> char[ hex shape ]
-    for (int j=0; j<4; j++)
-    {
+    for (int j=0; j<4; j++){
         sprintf((char*)(output_32 + 2*j),"%02X", input[j]);
     }
     //insert NULL at the end of the output string
@@ -79,12 +73,10 @@ float ieee754decoding_32(unsigned char* str_data_arr,int i)
     return ieee754float.f; 
 }
 
-double ieee754decoding_64(unsigned char* str_data_arr, int i)
-{
+double ieee754decoding_64(unsigned char* str_data_arr, int i){
     unsigned char input[8] ={str_data_arr[i],str_data_arr[i-1],str_data_arr[i-2],str_data_arr[i-3],str_data_arr[i-4],str_data_arr[i-5],str_data_arr[i-6],str_data_arr[i-7] } ;
     char output_64[17];
-    for (int j=0; j<8; j++)
-    {
+    for (int j=0; j<8; j++){
         sprintf((char*)(output_64 + 2*j),"%02X", input[j]);
     }
     output_64[17] = '\0';
@@ -112,23 +104,19 @@ double ieee754decoding_64(unsigned char* str_data_arr, int i)
     return ieee754double.d; 
 }
 
-uint16_t checkcrc(unsigned char* pBuffer, int bufferSize)
-{
+uint16_t checkcrc(unsigned char* pBuffer, int bufferSize){
     const uint8_t *pArray = (const uint8_t *)pBuffer;
     uint16_t poly = 0x8408;
     uint16_t crc16 = 0;
     uint8_t carry;
     uint8_t i;
     uint16_t j;
-    for (j=2; j<bufferSize-3; j++)
-    {
+    for (j=2; j<bufferSize-3; j++){
         crc16 = (crc16 ^ pBuffer[j]);
-        for(i=0; i<8;i++)
-        {
+        for(i=0; i<8;i++){
             carry = crc16 & 1;
             crc16 = crc16 / 2;
-            if(carry)
-            {
+            if(carry){
                 crc16 = (crc16 ^ poly);
             }
         }
@@ -139,8 +127,7 @@ uint16_t checkcrc(unsigned char* pBuffer, int bufferSize)
   
     char crc[5];
     //char[ string shape ] -> char[ hex shape ]
-    for (int j=0; j<2; j++)
-    {
+    for (int j=0; j<2; j++){
         sprintf((char*)(crc + 2*j),"%02X", input[j]);
     }
     //insert NULL at the end of the output string
@@ -155,68 +142,64 @@ uint16_t checkcrc(unsigned char* pBuffer, int bufferSize)
 
     if (crc16 == n)
         return 1;
-    else return 0;
+    else
+        return 0;
    
 }
 
-void gpsdecoding (unsigned char* str_data_arr, int str_len, geometry_msgs::QuaternionStamped & msg_Quaternion, geometry_msgs::TwistStamped & msg_Twist, sensor_msgs::NavSatFix & msg_Nav )
-{
+void gpsdecoding (unsigned char* str_data_arr, int str_len, geometry_msgs::PoseStamped & msg_local_pose, geometry_msgs::TwistStamped & msg_global_vel, sensor_msgs::NavSatFix & msg_global_position ){
     //check integrity by CRC
-    if ( checkcrc( str_data_arr, str_len ) == 1 )
-    {
- 
+    if ( checkcrc( str_data_arr, str_len ) == 1 ){
         //data type 06
-        if ((int)str_data_arr[2] == 7)
-        {
-            msg_Quaternion.quaternion.x = ieee754decoding_32(str_data_arr, 13) ;
-            msg_Quaternion.quaternion.y = ieee754decoding_32(str_data_arr, 17) ;
-            msg_Quaternion.quaternion.z = ieee754decoding_32(str_data_arr, 21) ;
-            msg_Quaternion.quaternion.w = ieee754decoding_32(str_data_arr, 25) ;
-
-            
-        }
-
-      
-       
+        if ((int)str_data_arr[2] == 7){
+            msg_local_pose.pose.position.x = 0;
+            msg_local_pose.pose.position.y = 0;
+            msg_local_pose.pose.position.z = 0;
+            msg_local_pose.pose.orientation.x = ieee754decoding_32(str_data_arr, 13) ;
+            msg_local_pose.pose.orientation.y = ieee754decoding_32(str_data_arr, 17) ;
+            msg_local_pose.pose.orientation.z = ieee754decoding_32(str_data_arr, 21) ;
+            msg_local_pose.pose.orientation.w = ieee754decoding_32(str_data_arr, 25) ;   
+        } 
         //data type 08
-        if ((int)str_data_arr[2] == 8)
-        {
-            msg_Twist.twist.linear.x = ieee754decoding_32(str_data_arr, 13);
-            msg_Twist.twist.linear.y = ieee754decoding_32(str_data_arr, 17);
-            msg_Twist.twist.linear.z = ieee754decoding_32(str_data_arr, 21);
-            msg_Nav.latitude = ieee754decoding_64(str_data_arr, 41);
-            msg_Nav.longitude  = ieee754decoding_64(str_data_arr, 49);
-            msg_Nav.altitude = ieee754decoding_64(str_data_arr, 57);
+        if ((int)str_data_arr[2] == 8){
+            msg_global_vel.twist.linear.x = ieee754decoding_32(str_data_arr, 13);
+            msg_global_vel.twist.linear.y = ieee754decoding_32(str_data_arr, 17);
+            msg_global_vel.twist.linear.z = ieee754decoding_32(str_data_arr, 21);
+            msg_global_position.latitude  = ieee754decoding_64(str_data_arr, 41);
+            msg_global_position.longitude = ieee754decoding_64(str_data_arr, 49);
+            msg_global_position.altitude  = ieee754decoding_64(str_data_arr, 57);
         }
     } 
 }
 
-
-
-
 int main (int argc, char** argv){
     ros::init(argc, argv, "gps_data_pub");
     ros::NodeHandle nh;
-    ros::Publisher gps_Quaternion_pub = nh.advertise<geometry_msgs::QuaternionStamped>("Quaternion", 100);
-    ros::Publisher gps_Twist_pub = nh.advertise<geometry_msgs::TwistStamped>("Twist",100);
-    ros::Publisher gps_Nav_pub = nh.advertise<sensor_msgs::NavSatFix>("Nav",100);
+    ros::Publisher gps_local_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/pad/local_position.pose", 100);
+    ros::Publisher gps_global_vel_pub = nh.advertise<geometry_msgs::TwistStamped>("/pad/global_position/velocity_global",100);
+    ros::Publisher gps_global_position_pub = nh.advertise<sensor_msgs::NavSatFix>("/pad/global_position/global",100);
 
-    geometry_msgs::QuaternionStamped msg_Quaternion;
-    geometry_msgs::TwistStamped msg_Twist;
-    sensor_msgs::NavSatFix msg_Nav;
-    msg_Quaternion.quaternion.x =0;
-    msg_Quaternion.quaternion.y =0;
-    msg_Quaternion.quaternion.w =0;
-    msg_Quaternion.quaternion.z =0;
-    msg_Twist.twist.linear.x =0;
-    msg_Twist.twist.linear.y =0;
-    msg_Twist.twist.linear.z =0;
-    msg_Twist.twist.angular.x =0;
-    msg_Twist.twist.angular.y =0;
-    msg_Twist.twist.angular.z =0;
-    msg_Nav.latitude =0;
-    msg_Nav.longitude =0;
-    msg_Nav.altitude =0;
+    //geometry_msgs::QuaternionStamped msg_Quaternion;
+    geometry_msgs::PoseStamped msg_local_pose;
+    geometry_msgs::TwistStamped msg_global_vel;
+    sensor_msgs::NavSatFix msg_global_position;
+
+    msg_local_pose.pose.position.x = 0;
+    msg_local_pose.pose.position.y = 0;
+    msg_local_pose.pose.position.z = 0;
+    msg_local_pose.pose.orientation.x = 0;
+    msg_local_pose.pose.orientation.y = 0;
+    msg_local_pose.pose.orientation.z = 0;
+    msg_local_pose.pose.orientation.w = 1;
+    msg_global_vel.twist.linear.x =0;
+    msg_global_vel.twist.linear.y =0;
+    msg_global_vel.twist.linear.z =0;
+    msg_global_vel.twist.angular.x =0;
+    msg_global_vel.twist.angular.y =0;
+    msg_global_vel.twist.angular.z =0;
+    msg_global_position.latitude =0;
+    msg_global_position.longitude =0;
+    msg_global_position.altitude =0;
     serial::Serial ser;
 
     try
@@ -252,10 +235,10 @@ int main (int argc, char** argv){
             str_len = str_data.length();
             memcpy(str_data_arr, str_data.c_str(), str_len+1);
             str_data_arr[str_len+1] = 0x00;
-            gpsdecoding(str_data_arr, str_len,msg_Quaternion, msg_Twist, msg_Nav);
-            gps_Quaternion_pub.publish(msg_Quaternion);
-            gps_Twist_pub.publish(msg_Twist);
-            gps_Nav_pub.publish(msg_Nav);
+            gpsdecoding(str_data_arr, str_len,msg_local_pose, msg_global_vel, msg_global_position);
+            gps_local_pose_pub.publish(msg_local_pose);
+            gps_global_vel_pub.publish(msg_global_vel);
+            gps_global_position_pub.publish(msg_global_position);
         }
         loop_rate.sleep();
 
