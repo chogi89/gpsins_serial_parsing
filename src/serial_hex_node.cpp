@@ -235,9 +235,16 @@ int main (int argc, char** argv){
             str_len = str_data.length();
             memcpy(str_data_arr, str_data.c_str(), str_len+1);
             str_data_arr[str_len+1] = 0x00;
+
             gpsdecoding(str_data_arr, str_len,msg_local_pose, msg_global_vel, msg_global_position);
+
+	    msg_local_pose.header.stamp = ros::Time::now();
+	    msg_local_pose.header.frame_id = "base_link";
             gps_local_pose_pub.publish(msg_local_pose);
+	    msg_global_vel.header.stamp = ros::Time::now();
+	    msg_global_vel.header.frame_id = "base_link";
             gps_global_vel_pub.publish(msg_global_vel);
+	    msg_global_position.header.stamp = ros::Time::now();
             gps_global_position_pub.publish(msg_global_position);
         }
         loop_rate.sleep();
